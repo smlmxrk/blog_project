@@ -1,10 +1,17 @@
 package com.mark.backend.service;
 
+
+import com.mark.backend.dto.PagedResponse;
 import com.mark.backend.dto.PostRequest;
 import com.mark.backend.dto.PostResponse;
+import com.mark.backend.exception.PostNotFoundException;
 import com.mark.backend.model.Post;
 import com.mark.backend.repository.PostRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,13 +25,35 @@ public class PostService {
         this.postRepository = postRepository;
     }
 
-    public List<Post> getAll() {
-        return postRepository.findAll();
+    public PagedResponse<PostResponse> getAll(int page, int size) {
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Page<Post> postPage = postRepository.findAll(pageable);
+
+        List<PostResponse> content = postPage.getContent()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+
+        return new PagedResponse<>(
+                content,
+                postPage.getNumber(),
+                postPage.getSize(),
+                postPage.getTotalElements(),
+                postPage.getTotalPages(),
+                postPage.isLast()
+        );
     }
 
-    public Post getBySlug(String slug) {
-        return postRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+    public PostResponse getBySlug(String slug) {
+        Post post = postRepository.findBySlug(slug)
+                .orElseThrow(() -> new PostNotFoundException(slug));
+        return toResponse(post);
     }
 
     public PostResponse create(PostRequest request) {
@@ -45,7 +74,7 @@ public class PostService {
 
     public PostResponse update(String slug, PostRequest request) {
         Post existing = postRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
+                .orElseThrow(() -> new PostNotFoundException(slug));
 
         existing.setTitle(request.getTitle());
         existing.setContent(request.getContent());
@@ -62,7 +91,7 @@ public class PostService {
 
     public void delete(String slug) {
         Post existing = postRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
+                .orElseThrow(() -> new PostNotFoundException(slug));
 
         postRepository.delete(existing);
     }

@@ -1,5 +1,6 @@
 package com.mark.backend.controller;
 
+import com.mark.backend.dto.PagedResponse;
 import com.mark.backend.dto.PostResponse;
 import com.mark.backend.dto.PostRequest;
 import com.mark.backend.model.Post;
@@ -20,12 +21,15 @@ public class PostController {
     }
 
     @GetMapping
-    public List<Post> getAllPosts() {
-        return postService.getAll();
+    public PagedResponse<PostResponse> getAllPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return postService.getAll(page, size);
     }
 
     @GetMapping("/{slug}")
-        public Post getPostBySlug(@PathVariable String slug) {
+        public PostResponse getPostBySlug(@PathVariable String slug) {
             return postService.getBySlug(slug);
     }
 
