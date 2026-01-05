@@ -1,0 +1,1 @@
+// types to be shared across the app for the blog posts
